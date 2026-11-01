@@ -1,0 +1,50 @@
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: Inter, 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif;
+  --color-background: hsl(0 0% 100%);
+  --color-muted: hsl(240 4.8% 95.9%);
+  --color-foreground: hsl(240 10% 3.9%);
+  --color-muted-foreground: hsl(240 3.8% 46.1%);
+  --color-border: hsl(240 5.9% 90%);
+  --color-primary: hsl(240 5.9% 10%);
+  --color-primary-foreground: hsl(0 0% 98%);
+  --color-ring: hsl(240 5.9% 10%);
+  --color-destructive: hsl(0 72% 51%);
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  background: var(--color-muted);
+  color: var(--color-foreground);
+  -webkit-font-smoothing: antialiased;
+}
+
+@keyframes todo-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.todo-enter {
+  animation: todo-enter 150ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .todo-enter {
+    animation: none;
+  }
+}
+
+/* 设计稿 v1.4：触屏 (hover: none) 覆盖桌面端的 opacity-0，删除按钮常显。 */
+@media (hover: none) {
+  .delete-btn {
+    opacity: 1;
+  }
+}
