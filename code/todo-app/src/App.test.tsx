@@ -267,6 +267,33 @@ describe('待办页面', () => {
     expect(texts()[0]).toBe('a'.repeat(199))
   })
 
+  it('组字期间不截断，上屏后再按 200 字截断且不留拼音', () => {
+    render(<App />)
+    const prefix = 'a'.repeat(198)
+    fireEvent.change(input(), { target: { value: prefix } })
+    fireEvent.compositionStart(input())
+    fireEvent.change(input(), { target: { value: `${prefix}ceshiyongli` } })
+    expect(input()).toHaveValue(`${prefix}ceshiyongli`)
+    fireEvent.change(input(), { target: { value: `${prefix}测试用例` } })
+    fireEvent.compositionEnd(input())
+    const value = (input() as HTMLInputElement).value
+    expect(value).toBe(`${prefix}测试`)
+    expect(value).toHaveLength(200)
+    expect(value.slice(198)).toBe('测试')
+    expect(value.slice(198)).not.toMatch(/[a-z]/)
+  })
+
+  it('组字结束时不把 emoji 截成半个代理对', () => {
+    render(<App />)
+    const prefix = 'a'.repeat(199)
+    fireEvent.compositionStart(input())
+    fireEvent.change(input(), { target: { value: `${prefix}😀` } })
+    fireEvent.compositionEnd(input())
+    const value = (input() as HTMLInputElement).value
+    expect(value).toBe(prefix)
+    expect(value).not.toContain('\uFFFD')
+  })
+
   it('AC-02-12 组字中的 Enter 不提交，下一次 Enter 才添加', () => {
     render(<App />)
     fireEvent.change(input(), { target: { value: 'xiezhoubao' } })

@@ -4,6 +4,7 @@ import {
   useRef,
   useState,
   type ClipboardEvent,
+  type CompositionEvent,
   type FormEvent,
   type KeyboardEvent,
 } from 'react'
@@ -46,6 +47,7 @@ export function TodoApp() {
   const draftRef = useRef(draft)
   const inputRef = useRef<HTMLInputElement>(null)
   const skipSubmitRef = useRef(false)
+  const composingRef = useRef(false)
   const submitEnabled = canSubmit(draft)
 
   useEffect(() => {
@@ -55,7 +57,18 @@ export function TodoApp() {
   }, [])
 
   function updateDraft(value: string) {
-    const next = clampTodoInput(value)
+    const next = composingRef.current ? value : clampTodoInput(value)
+    draftRef.current = next
+    setDraft(next)
+  }
+
+  function onCompositionStart() {
+    composingRef.current = true
+  }
+
+  function onCompositionEnd(event: CompositionEvent<HTMLInputElement>) {
+    composingRef.current = false
+    const next = clampTodoInput(event.currentTarget.value)
     draftRef.current = next
     setDraft(next)
   }
@@ -81,7 +94,7 @@ export function TodoApp() {
 
   function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    if (skipSubmitRef.current) {
+    if (skipSubmitRef.current || composingRef.current) {
       skipSubmitRef.current = false
       return
     }
@@ -120,7 +133,7 @@ export function TodoApp() {
   return (
     <div className="min-h-screen bg-muted px-4 pt-6 text-foreground min-[481px]:px-6 lg:pt-24">
       <div className="mx-auto w-full min-w-0 max-w-xl">
-        <main className="min-w-0 rounded-xl border border-border bg-background p-4 shadow-sm max-[480px]:shadow-none lg:p-6">
+        <main className="min-w-0 rounded-xl border border-border bg-background p-4 shadow-sm max-[481px]:shadow-none lg:p-6">
           <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">{copy.title}</h1>
           <form className="mt-4 flex gap-2" onSubmit={onSubmit}>
             <input
@@ -131,6 +144,8 @@ export function TodoApp() {
               value={draft}
               autoComplete="off"
               onChange={(event) => updateDraft(event.target.value)}
+              onCompositionStart={onCompositionStart}
+              onCompositionEnd={onCompositionEnd}
               onPaste={onPaste}
               onKeyDown={onKeyDown}
               onKeyUp={onKeyUp}
@@ -143,7 +158,7 @@ export function TodoApp() {
               className="inline-flex h-11 w-11 shrink-0 items-center justify-center gap-1 rounded-md bg-primary text-sm font-medium text-primary-foreground transition-colors duration-150 ease-out hover:bg-primary/90 active:bg-primary/80 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 aria-disabled:cursor-not-allowed aria-disabled:opacity-50 min-[481px]:h-10 min-[481px]:w-auto min-[481px]:px-3"
             >
               <Plus className="h-4 w-4" aria-hidden="true" />
-              <span className="max-[480px]:sr-only">{copy.add}</span>
+              <span className="max-[481px]:sr-only">{copy.add}</span>
             </button>
           </form>
 
@@ -170,7 +185,7 @@ export function TodoApp() {
           </div>
           <StatsLine items={items} />
         </main>
-        <p className="mt-4 text-center text-xs text-muted-foreground">{copy.storageNote}</p>
+        <p className="mt-4 text-center text-xs text-zinc-600">{copy.storageNote}</p>
       </div>
     </div>
   )
