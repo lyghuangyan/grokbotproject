@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Todo List</title>
+<style>
+  :root {
+    --bg: #fafafa;
+    --card: #ffffff;
+    --border: #e4e4e7;
+    --text: #09090b;
+    --muted: #71717a;
+    --primary: #18181b;
+    --primary-fg: #fafafa;
+    --ring: #a1a1aa;
+    --danger: #dc2626;
+    --radius: 8px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--bg);
+    color: var(--text);
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 64px 16px;
+  }
+  .card {
+    width: 100%;
+    max-width: 560px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    box-shadow: 0 1px 2px rgba(0,0,0,.04);
+    padding: 24px;
+  }
+  h1 { margin: 0 0 4px; font-size: 22px; font-weight: 600; letter-spacing: -0.01em; }
+  .subtitle { margin: 0 0 20px; color: var(--muted); font-size: 14px; }
+  form { display: flex; gap: 8px; }
+  input[type="text"] {
+    flex: 1;
+    min-width: 0;
+    height: 40px;
+    padding: 0 12px;
+    font-size: 14px;
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: #fff;
+    outline: none;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  input[type="text"]:focus { border-color: var(--ring); box-shadow: 0 0 0 3px rgba(161,161,170,.25); }
+  input[type="text"].invalid { border-color: var(--danger); box-shadow: 0 0 0 3px rgba(220,38,38,.15); }
+  .btn {
+    height: 40px;
+    padding: 0 16px;
+    font-size: 14px;
+    font-weight: 500;
+    border: none;
+    border-radius: var(--radius);
+    background: var(--primary);
+    color: var(--primary-fg);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: opacity .15s;
+  }
+  .btn:hover { opacity: .9; }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+  .meta { display: flex; justify-content: space-between; margin: 6px 2px 16px; font-size: 12px; color: var(--muted); min-height: 16px; }
+  .meta .error { color: var(--danger); }
+  ul { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--border); }
+  li {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 4px;
+    border-bottom: 1px solid var(--border);
+  }
+  li input[type="checkbox"] { width: 18px; height: 18px; flex-shrink: 0; accent-color: var(--primary); cursor: pointer; }
+  li .text { flex: 1; font-size: 14px; line-height: 1.5; word-break: break-word; }
+  li.done .text { text-decoration: line-through; color: var(--muted); }
+  .del {
+    flex-shrink: 0;
+    height: 32px;
+    padding: 0 10px;
+    font-size: 13px;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+  }
+  .del:hover { color: var(--danger); border-color: var(--border); background: #fef2f2; }
+  .empty { text-align: center; color: var(--muted); font-size: 14px; padding: 32px 0 16px; }
+  .footer { margin-top: 12px; font-size: 12px; color: var(--muted); }
+  @media (max-width: 480px) {
+    body { padding: 16px 12px; }
+    .card { padding: 16px; border-radius: 10px; }
+    h1 { font-size: 20px; }
+    input[type="text"], .btn { height: 44px; font-size: 16px; } /* 16px 防止 iOS 聚焦缩放 */
+    li { padding: 14px 2px; }
+    .del { height: 36px; }
+  }
+</style>
+</head>
+<body>
+  <main class="card">
+    <h1>Todo List</h1>
+    <p class="subtitle">记录要做的事，数据保存在本地浏览器中。</p>
+
+    <form id="todo-form" novalidate>
+      <input id="todo-input" type="text" maxlength="200" placeholder="添加一个待办…" autocomplete="off" aria-label="待办内容" />
+      <button class="btn" type="submit" id="add-btn">添加</button>
+    </form>
+    <div class="meta">
+      <span id="error" class="error" role="alert"></span>
+      <span id="counter">0 / 200</span>
+    </div>
+
+    <ul id="todo-list" aria-label="待办列表"></ul>
+    <p id="empty" class="empty">暂无待办，先添加一条吧。</p>
+    <div id="footer" class="footer"></div>
+  </main>
+
+<script>
+(function () {
+  const STORAGE_KEY = 'todo-list:items';
+  const MAX_LEN = 200;
+
+  const form = document.getElementById('todo-form');
+  const input = document.getElementById('todo-input');
+  const listEl = document.getElementById('todo-list');
+  const emptyEl = document.getElementById('empty');
+  const errorEl = document.getElementById('error');
+  const counterEl = document.getElementById('counter');
+  const footerEl = document.getElementById('footer');
+
+  /** @type {{id:string, text:string, done:boolean, createdAt:number}[]} */
+  let items = load();
+
+  function load() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return [];
+      const data = JSON.parse(raw);
+      if (!Array.isArray(data)) return [];
+      // 过滤掉结构不合法的数据，防止被篡改或旧版本数据导致报错
+      return data.filter(it => it && typeof it.id === 'string' && typeof it.text === 'string')
+                 .map(it => ({ id: it.id, text: it.text.slice(0, MAX_LEN), done: !!it.done, createdAt: Number(it.createdAt) || Date.now() }));
+    } catch (e) {
+      console.warn('读取本地数据失败，已重置为空列表', e);
+      return [];
+    }
+  }
+
+  function save() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+    } catch (e) {
+      showError('保存失败：浏览器存储不可用或已满');
+    }
+  }
+
+  function genId() {
+    return (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2));
+  }
+
+  function showError(msg) {
+    errorEl.textContent = msg;
+    input.classList.toggle('invalid', !!msg);
+  }
+
+  function updateCounter() {
+    counterEl.textContent = input.value.length + ' / ' + MAX_LEN;
+  }
+
+  function render() {
+    listEl.innerHTML = '';
+    for (const item of items) {
+      const li = document.createElement('li');
+      li.dataset.id = item.id;
+      if (item.done) li.classList.add('done');
+
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.checked = item.done;
+      cb.setAttribute('aria-label', item.done ? '标记为未完成' : '标记为完成');
+      cb.dataset.action = 'toggle';
+
+      const span = document.createElement('span');
+      span.className = 'text';
+      span.textContent = item.text; // 用 textContent，避免 XSS
+
+      const del = document.createElement('button');
+      del.type = 'button';
+      del.className = 'del';
+      del.textContent = '删除';
+      del.setAttribute('aria-label', '删除：' + item.text);
+      del.dataset.action = 'delete';
+
+      li.append(cb, span, del);
+      listEl.appendChild(li);
+    }
+    emptyEl.style.display = items.length ? 'none' : 'block';
+    const doneCount = items.filter(i => i.done).length;
+    footerEl.textContent = items.length ? `共 ${items.length} 项，已完成 ${doneCount} 项` : '';
+  }
+
+  function addTodo(rawText) {
+    const text = rawText.trim();
+    if (!text) { showError('内容不能为空'); return false; }
+    if (text.length > MAX_LEN) { showError('最多 ' + MAX_LEN + ' 个字'); return false; }
+    items.unshift({ id: genId(), text, done: false, createdAt: Date.now() }); // 新增置顶
+    save();
+    render();
+    return true;
+  }
+
+  function toggleTodo(id) {
+    const item = items.find(i => i.id === id);
+    if (!item) return;
+    item.done = !item.done; // 保持原位，不重新排序
+    save();
+    render();
+  }
+
+  function deleteTodo(id) {
+    items = items.filter(i => i.id !== id);
+    save();
+    render();
+  }
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    if (addTodo(input.value)) {
+      input.value = '';
+      showError('');
+      updateCounter();
+    }
+    input.focus();
+  });
+
+  input.addEventListener('input', () => {
+    if (errorEl.textContent) showError('');
+    updateCounter();
+  });
+
+  // 事件委托处理勾选和删除
+  listEl.addEventListener('click', (e) => {
+    const target = e.target;
+    const li = target.closest('li');
+    if (!li) return;
+    if (target.dataset.action === 'toggle') toggleTodo(li.dataset.id);
+    else if (target.dataset.action === 'delete') deleteTodo(li.dataset.id);
+  });
+
+  // 多标签页同步
+  window.addEventListener('storage', (e) => {
+    if (e.key === STORAGE_KEY) { items = load(); render(); }
+  });
+
+  render();
+  updateCounter();
+})();
+</script>
+</body>
+</html>
