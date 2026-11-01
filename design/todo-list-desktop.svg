@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="700" viewBox="0 0 600 700">
+  <rect width="600" height="700" fill="#fafafa"/>
+  <rect x="20" y="40" width="560" height="620" rx="12" fill="#ffffff" stroke="#e4e4e7"/>
+  <text x="40" y="80" font-family="system-ui, sans-serif" font-size="22" font-weight="600" fill="#09090b">待办清单</text>
+  <text x="480" y="80" font-family="system-ui, sans-serif" font-size="14" fill="#71717a">2 项未完成</text>
+  <rect x="40" y="100" width="400" height="40" rx="8" fill="#ffffff" stroke="#e4e4e7"/>
+  <text x="52" y="125" font-family="system-ui, sans-serif" font-size="14" fill="#71717a">添加一项待办…</text>
+  <rect x="450" y="100" width="110" height="40" rx="8" fill="#18181b"/>
+  <text x="478" y="125" font-family="system-ui, sans-serif" font-size="14" fill="#fafafa">添加</text>
+  <rect x="40" y="160" width="520" height="1" fill="#e4e4e7"/>
+  <circle cx="60" cy="195" r="9" fill="none" stroke="#18181b" stroke-width="2"/>
+  <text x="85" y="200" font-family="system-ui, sans-serif" font-size="14" fill="#09090b">回复客户邮件</text>
+  <text x="520" y="200" font-family="system-ui, sans-serif" font-size="13" fill="#71717a">删除</text>
+  <rect x="40" y="220" width="520" height="1" fill="#e4e4e7"/>
+  <circle cx="60" cy="255" r="9" fill="#18181b"/>
+  <path d="M55 255 l4 4 6 -6" stroke="#fafafa" stroke-width="1.5" fill="none"/>
+  <text x="85" y="260" font-family="system-ui, sans-serif" font-size="14" fill="#71717a" text-decoration="line-through">写周报</text>
+  <text x="520" y="260" font-family="system-ui, sans-serif" font-size="13" fill="#71717a">删除</text>
+  <rect x="40" y="280" width="520" height="1" fill="#e4e4e7"/>
+  <circle cx="60" cy="315" r="9" fill="none" stroke="#18181b" stroke-width="2"/>
+  <text x="85" y="320" font-family="system-ui, sans-serif" font-size="14" fill="#09090b">准备会议材料</text>
+  <text x="520" y="320" font-family="system-ui, sans-serif" font-size="13" fill="#71717a">删除</text>
+  <text x="300" y="640" font-family="system-ui, sans-serif" font-size="12" fill="#71717a" text-anchor="middle">数据仅保存在当前浏览器本地，清除浏览器数据后会丢失。</text>
+</svg>
