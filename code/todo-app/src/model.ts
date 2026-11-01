@@ -11,12 +11,17 @@ export const MAX_TODO_LENGTH = 200
 const ZERO_WIDTH = /\u200B|\u200C|\u200D|\u2060|\uFEFF/g
 const LINE_BREAK = /\r\n|\r|\n/g
 
-/** 加载时使用的文本：去掉零宽字符再 trim。不合法时返回 null，不截断。 */
-export function canonicalStoredText(text: string): string | null {
-  if (text.trim().length > MAX_TODO_LENGTH) return null
-  const cleaned = text.replace(ZERO_WIDTH, '').trim()
-  if (!cleaned) return null
-  return cleaned
+/**
+ * 加载时只在判断合法性时去掉零宽字符。
+ * 显示和写回仍用 trim 后的原文，已有的 a\u200Bb 会原样保留。
+ */
+export function isStoredTextLegal(text: string): boolean {
+  if (text.trim().length > MAX_TODO_LENGTH) return false
+  return text.replace(ZERO_WIDTH, '').trim().length > 0
+}
+
+export function displayStoredText(text: string): string {
+  return text.trim()
 }
 
 export function isTodo(value: unknown): value is Todo {
@@ -26,7 +31,7 @@ export function isTodo(value: unknown): value is Todo {
     typeof item.id === 'string' &&
     item.id.length > 0 &&
     typeof item.text === 'string' &&
-    canonicalStoredText(item.text) !== null &&
+    isStoredTextLegal(item.text) &&
     typeof item.completed === 'boolean' &&
     typeof item.createdAt === 'number' &&
     Number.isFinite(item.createdAt)

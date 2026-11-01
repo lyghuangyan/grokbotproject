@@ -111,6 +111,17 @@ describe('todoStorage', () => {
     expect(JSON.parse(storage.getItem(STORAGE_KEY)!)).toEqual([todo('same', '留下', false, 2)])
   })
 
+  it('加载时保留零宽字符，只 trim，不因此写回', () => {
+    const raw = JSON.stringify([{ id: 'z', text: '  a\u200Bb  ', completed: false, createdAt: 1 }])
+    const storage = memory({ [STORAGE_KEY]: raw })
+    const loaded = loadTodos(storage)
+    expect(loaded.items).toEqual([todo('z', 'a\u200Bb', false, 1)])
+    expect(loaded.items[0]?.text).toBe('a\u200Bb')
+    expect(loaded.status.warning).toBeNull()
+    expect(storage.getItem(STORAGE_KEY)).toBe(raw)
+    expect(storage.getItem(STORAGE_BACKUP_KEY)).toBeNull()
+  })
+
   it('显示顺序以数组为准，不按 createdAt 重排', () => {
     const older = todo('old', '较早', false, 1)
     const newer = todo('new', '较新', false, 99)

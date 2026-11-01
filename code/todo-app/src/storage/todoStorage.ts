@@ -1,4 +1,4 @@
-import { canonicalStoredText, isTodo, type Todo } from '../model.ts'
+import { displayStoredText, isTodo, type Todo } from '../model.ts'
 import { copy } from '../copy.ts'
 
 export const STORAGE_KEY = 'todo-list:items'
@@ -51,6 +51,10 @@ export function mergeStatus(previous: StorageStatus, next: StorageStatus): Stora
   }
 }
 
+/**
+ * 每次调用时读取 window.localStorage，不在模块加载时缓存 setItem。
+ * 这样页面脚本执行前对 Storage.prototype.setItem 的注入仍然生效。
+ */
 export function safeLocalStorage(): KeyValueStorage | null {
   try {
     if (typeof window === 'undefined') return null
@@ -128,11 +132,7 @@ function sanitize(values: unknown[]): { items: Todo[]; dropped: boolean } {
       dropped = true
       continue
     }
-    const text = canonicalStoredText(value.text)
-    if (!text) {
-      dropped = true
-      continue
-    }
+    const text = displayStoredText(value.text)
     valid.push({
       id: value.id,
       text,

@@ -473,6 +473,15 @@ describe('待办页面', () => {
     expect(localStorage.getItem(STORAGE_BACKUP_KEY)).toBe(raw)
   })
 
+  it('加载旧数据时保留 a\\u200Bb，只去掉首尾空格', () => {
+    const raw = JSON.stringify([{ id: 'z', text: '  a\u200Bb  ', completed: false, createdAt: 1 }])
+    seed(raw)
+    render(<App />)
+    expect(document.querySelector('.todo-text')?.textContent).toBe('a\u200Bb')
+    expect(localStorage.getItem(STORAGE_KEY)).toBe(raw)
+    expect(localStorage.getItem(STORAGE_BACKUP_KEY)).toBeNull()
+  })
+
   it('AC-02-16 保存时去掉零宽字符', async () => {
     const user = userEvent.setup()
     render(<App />)

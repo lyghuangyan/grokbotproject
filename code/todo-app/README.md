@@ -37,4 +37,20 @@ npm test         # Vitest，一次跑完
 | `todo-list:items.bak` | 修复前的原始字符串，只留最近一次 |
 | `todo-list:probe` | 加载时探测，写完立刻删除 |
 
-加载时不可用、备份失败或任意写入失败后进入仅内存模式：提示条文案为「当前无法保存到本地，本次的修改不会被保存，关闭或刷新页面后将丢失。」本次会话不再写入，刷新后重新尝试。数据损坏修复成功不提示。多余字段和首尾空格不触发备份或写回。
+加载时不可用、备份失败或任意写入失败后进入仅内存模式：提示条文案为「当前无法保存到本地，本次的修改不会被保存，关闭或刷新页面后将丢失。」本次会话不再写入，刷新后重新尝试。数据损坏修复成功不提示。多余字段和首尾空格不触发备份或写回。加载时零宽字符只用于判断合法性，显示和存储的文本只 trim，旧数据里的 `a\u200Bb` 原样保留；新保存的内容仍会去掉零宽字符。
+
+存储读写发生在运行时：`safeLocalStorage()` 每次读取 `window.localStorage`，`setItem` 走 `Storage.prototype`，模块加载时不缓存方法引用。因此可以在页面脚本执行前注入测试用例 1.2 节的脚本（Playwright `addInitScript`，或 Puppeteer `evaluateOnNewDocument`）：
+
+```js
+window.__todoWrites = [];
+const __set = Storage.prototype.setItem;
+Storage.prototype.setItem = function (k, v) { window.__todoWrites.push(k); return __set.call(this, k, v); };
+
+const __set2 = Storage.prototype.setItem;
+Storage.prototype.setItem = function (k, v) {
+  if (k === 'todo-list:items.bak') throw new DOMException('mock', 'QuotaExceededError');
+  return __set2.call(this, k, v);
+};
+```
+
+Chrome 实测见 `SELF-TEST.md` 的「1.2 注入验证」。

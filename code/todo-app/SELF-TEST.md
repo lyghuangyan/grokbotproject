@@ -2,19 +2,21 @@
 
 - 日期：2026-11-01
 - 工程：`code/todo-app`
-- 依据：冻结的 PRD v1.3（69 条 AC）。设计稿文件文首为 v1.5；提示条文案以 PRD v1.3 为准。
-- 自动化：`npm test` 93 条通过，`npm run lint`、`npm run build` 通过。
-- 浏览器：桌面 Chrome headless。320px 下 `scrollWidth === clientWidth === 320`。控制台无 error。
+- 依据：冻结的 PRD v1.3（6.3 已更正：加载时零宽字符只用于合法性判断）。设计稿 v1.6。
+- 自动化：`npm test` 95 条通过，`npm run lint`、`npm run build` 通过。
+- 浏览器：桌面 Chrome。320px 下 `scrollWidth === clientWidth === 320`。控制台无 error。
 
 仅内存模式已定死，没有自动补存开关。统计文案在 `src/statsCopy.ts`。性能打点是 `list-rendered` 和 `op`（`op-start` → 下一帧 `op-end`）。
 
-## 性能（Chrome，500 条，不降速）
+## 性能（Chrome，FX-500，不降速）
+
+打点：首屏 `list-rendered`（DOM 更新后的下一帧，`startTime` 从导航起算）。单次添加、勾选、删除先打 `op-start`，下一帧打 `op-end`，`performance.measure('op', 'op-start', 'op-end')`。
 
 | 指标 | 结果 | 门槛 |
 | --- | --- | --- |
-| `list-rendered` startTime | 415 ms | ≤ 1000 ms |
-| `op` 七次（添加 1、切换 3、删除 3） | 66.5 / 61.7 / 60.9 / 69.6 / 50.6 / 54.2 / 53.9 ms | 每次 ≤ 100 ms |
-| 500 条统计 | 剩余 499 项 · 共 500 项 | 与夹具一致 |
+| `list-rendered` startTime | 454 ms | ≤ 1000 ms |
+| `op` 七次（添加 1、切换第 1/250/500 条、删除 3 次） | 69 / 54.7 / 58.1 / 70.6 / 48.8 / 53 / 52 ms | 每次 ≤ 100 ms |
+| FX-500 统计 | 剩余 250 项 · 共 500 项 | 偶数下标已完成 |
 
 Headless Chrome 的媒体查询是 `(hover: none)`，所以 1280px 截图里删除按钮保持可见，这符合触屏规则。有鼠标且 `(hover: hover)` 时，≥1024px 才在悬停或聚焦时显示。
 
@@ -23,7 +25,7 @@ Headless Chrome 的媒体查询是 `(hover: none)`，所以 1280px 截图里删�
 | AC | 结果 |
 | --- | --- |
 | AC-01-1 到 AC-01-9 | 通过，`App.test` |
-| AC-01-10 零宽文本不合法 | 通过，备份后只留合法项 |
+| AC-01-10 零宽文本不合法 | 通过。纯零宽仍不合法。`a\u200Bb` 合法，加载后原样显示，存储不改 |
 | AC-01-11 多余字段和首尾空格 | 通过，不备份不写回；下一次操作写成标准结构 |
 | AC-01-12 先校验再去重 | 通过 |
 | AC-02-1 到 AC-02-15 | 通过，`App.test` |
@@ -50,3 +52,12 @@ Headless Chrome 的媒体查询是 `(hover: none)`，所以 1280px 截图里删�
 | AC-08-8 多标签 | 通过 hook 测试：不抛错、id 不重复。最后写入生效，条目可能复活，按 PRD 6.4 不记缺陷 |
 
 提示条实测文案：「当前无法保存到本地，本次的修改不会被保存，关闭或刷新页面后将丢失。」
+
+## 1.2 注入验证
+
+注入时机与 Playwright `addInitScript` 相同：Puppeteer `evaluateOnNewDocument`，在页面脚本之前替换 `Storage.prototype.setItem`。应用运行时才读取 `window.localStorage`，兼容这套注入。
+
+- **STUB-BAK-FAIL + SPY-WRITES**，存储为 `{abc`：空状态和提示条；原文仍是 `{abc`，没有 `.bak`，没有 `probe`。再添加一条后页面有新待办，存储不变，`__todoWrites` 不再增加。
+- **SPY-WRITES + `fill(0)`**：刷新后仍显示原来 3 条并出现提示条；再添加一条只在页面上，`todo-list:items` 不变，`__todoWrites` 停在加载时的探测（StrictMode 下 2 次），没有后续写入。
+
+1.2 节脚本先包一层记录、再包一层对 `.bak` 抛错。抛错发生在记录函数之前，所以失败的 `.bak` 调用不会进入 `__todoWrites`。页面和存储结果与用例一致。
